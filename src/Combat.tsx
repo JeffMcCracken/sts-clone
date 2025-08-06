@@ -1,61 +1,11 @@
-import { useState } from "react";
-
-const initialPlayer = {
-  hp: 50,
-  maxHp: 50,
-  block: 0,
-  energy: 3,
-};
-
-const initialEnemy = {
-  hp: 40,
-  maxHp: 40,
-  block: 0,
-  intent: "Attack for 8",
-  damage: 8,
-};
-
-const initialDeck = [
-  { id: 1, name: "Strike", cost: 1, type: "attack", damage: 6 },
-  { id: 2, name: "Defend", cost: 1, type: "block", block: 5 },
-  { id: 3, name: "Strike", cost: 1, type: "attack", damage: 6 },
-  { id: 4, name: "Defend", cost: 1, type: "block", block: 5 },
-  { id: 5, name: "Strike+", cost: 1, type: "attack", damage: 9 },
-];
+import { useCombatStore } from "./stores/combatStore";
 
 export default function Combat() {
-  const [player, setPlayer] = useState(initialPlayer);
-  const [enemy, setEnemy] = useState(initialEnemy);
-  const [hand, setHand] = useState(initialDeck);
-
-  const playCard = (card: any) => {
-    if (player.energy < card.cost) return;
-
-    let newPlayer = { ...player, energy: player.energy - card.cost };
-    let newEnemy = { ...enemy };
-
-    if (card.type === "attack") {
-      const damage = Math.max(0, card.damage - newEnemy.block);
-      newEnemy.block = Math.max(0, newEnemy.block - card.damage);
-      newEnemy.hp = Math.max(0, newEnemy.hp - damage);
-    } else if (card.type === "block") {
-      newPlayer.block += card.block;
-    }
-
-    setPlayer(newPlayer);
-    setEnemy(newEnemy);
-    setHand(hand.filter((c) => c.id !== card.id));
-  };
-
-  const endTurn = () => {
-    let newPlayer = { ...player, energy: 3, block: 0 };
-    let damage = Math.max(0, enemy.damage - player.block);
-    newPlayer.hp = Math.max(0, player.hp - damage);
-
-    setPlayer(newPlayer);
-    setEnemy({ ...enemy });
-    setHand(initialDeck); // reshuffle for demo
-  };
+  const player = useCombatStore((state) => state.player);
+  const enemy = useCombatStore((state) => state.enemy);
+  const hand = useCombatStore((state) => state.hand);
+  const playCard = useCombatStore((state) => state.playCard);
+  const endTurn = useCombatStore((state) => state.endTurn);
 
   return (
     <div className="p-4">
@@ -65,7 +15,10 @@ export default function Combat() {
         <h2>
           Enemy: {enemy.hp} / {enemy.maxHp}
         </h2>
-        <p>Intent: {enemy.intent}</p>
+        <p>Intent: {enemy.definition.moves[enemy.moveIndex].name}</p>
+        <p>Damage: {enemy.definition.moves[enemy.moveIndex].damage}</p>
+        <p>Block: {enemy.definition.moves[enemy.moveIndex].block}</p>
+        <p>Index: {enemy.moveIndex}</p>
       </div>
 
       <div className="mb-4">
@@ -90,8 +43,8 @@ export default function Combat() {
               <br />
               Cost: {card.cost}
               <br />
-              {card.type === "attack" && `DMG: ${card.damage}`}
-              {card.type === "block" && `Block: ${card.block}`}
+              {`DMG: ${card.damage}`}
+              {`Block: ${card.block}`}
             </button>
           ))}
         </div>
